@@ -86,8 +86,8 @@ public:
             float fog=(std::sin(tau*a)+std::sin(tau*b*1.005f)+std::sin(tau*c*.994f))*.24f;
             float flutter=std::sin(tau*lfo)*(p.drift*.42f)+std::sin(tau*lfo*7.0f)*p.drift*.06f;
             worn+=lpAlpha(150.0f+1300.0f*p.texture,static_cast<float>(sr))*(rnd-worn);
-            float radio=(rnd-worn)*p.stat*(.07f+.11f*std::max(0.0f,flutter+.1f));
-            float tide=(1.0f-.42f*p.dust)*(1.0f+.15f*flutter);
+            float radio=(rnd-worn)*p.stat*(.07f+.11f*std::max(0.0f,flutter+.1f)+.09f*p.mod);
+            float tide=(1.0f-.42f*p.dust)*(1.0f+.15f*flutter+.11f*p.mod*std::sin(tau*lfo));
             x=(choir*p.texture+fog*(1.0f-p.texture)+radio)*tide;
             low+=lpAlpha(320.0f+p.texture*7200.0f,static_cast<float>(sr))*(x-low);
             x=low*.40f;side=(saw2-saw3)*(.10f+.22f*p.drift)*p.texture;
