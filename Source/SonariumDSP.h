@@ -133,7 +133,7 @@ public:
         smoothSamples=sr*.35f;styleMix={1.0f,0.0f,0.0f};phase=0.0f;smoothMix=0.0f;
     }
     void reset() noexcept {
-        for(auto& line:lines) {std::fill(line.l.begin(),line.l.end(),0);std::fill(line.r.begin(),line.r.end(),0);line.pos=0;line.filterL=line.filterR=0;}
+        for(auto& line:lines) {std::fill(line.l.begin(),line.l.end(),0.0f);std::fill(line.r.begin(),line.r.end(),0.0f);line.pos=0;line.filterL=line.filterR=0;}
     }
     Stereo process(Stereo in,const Params& p) noexcept {
         smoothSamples+=(sr*(.07f+1.05f*p.tapeTime)-smoothSamples)*.00013f;
