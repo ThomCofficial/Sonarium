@@ -44,7 +44,7 @@ SonariumAudioProcessor::APVTS::ParameterLayout SonariumAudioProcessor::createLay
 
 SonariumAudioProcessor::SonariumAudioProcessor():
     juce::AudioProcessor(BusesProperties().withOutput("Output",juce::AudioChannelSet::stereo(),true)),
-    state(*this,nullptr,"SONARIUM",createLayout()) {}
+    state(*this,nullptr,"SONARIUM",createLayout()) { loadPreset(0); }
 
 bool SonariumAudioProcessor::isBusesLayoutSupported(const BusesLayout& layout) const {
     return layout.getMainOutputChannelSet()==juce::AudioChannelSet::stereo()
