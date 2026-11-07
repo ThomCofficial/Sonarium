@@ -55,6 +55,7 @@ private:
     std::array<juce::TextButton,3> modeButtons;
     std::array<juce::TextButton,3> tapeButtons;
     juce::Label presetLabel,polyLabel;
+    std::unique_ptr<juce::FileChooser> presetChooser;
     std::unique_ptr<juce::Slider> polySlider;
     std::unique_ptr<juce::AudioProcessorValueTreeState::SliderAttachment> polyAttach;
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(SonariumAudioProcessorEditor)
