@@ -33,10 +33,10 @@ public:
     bool active=false,held=false,sustained=false;
     int note=-1,engine=0;
     uint64_t stamp=0;
-    void start(int midi,float vel,int sound,double sampleRate,uint32_t& seed,uint64_t tickCount) noexcept {
+    void start(int midi,float vel,int sound,double sampleRate,uint32_t& seed,uint64_t tickCount,double initialFrequency=0.0) noexcept {
         active=true;held=true;sustained=false;note=midi;engine=sound;stamp=tickCount;
         velocity=clamp(vel,0.0f,1.0f);sr=sampleRate;hz=440.0*std::pow(2.0,(midi-69)/12.0);
-        glideHz=hz;env=0;age=0;phaseA=phaseB=phaseC=phaseD=0;low=0;worn=0;lastString=0;
+        glideHz=initialFrequency>0.0?initialFrequency:hz;env=0;age=0;phaseA=phaseB=phaseC=phaseD=0;low=0;worn=0;lastString=0;
         stringSize=std::max(8,std::min(static_cast<int>(stringData.size())-2,static_cast<int>(sr/hz)));
         for(int i=0;i<stringSize;i++) stringData[static_cast<size_t>(i)]=noise(seed)*.7f;
         stringAt=0;smoothedDrive=.25f;smoothedTone=.55f;smoothedStatic=.35f;
