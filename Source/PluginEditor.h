@@ -20,6 +20,15 @@ private:
     float angle=0.0f;
 };
 
+class SonariumTapeReel final : public juce::Component,private juce::Timer {
+public:
+    SonariumTapeReel();
+    void paint(juce::Graphics&) override;
+private:
+    void timerCallback() override {rotation+=.072f;repaint();}
+    float rotation=0.0f;
+};
+
 class SonariumMeter final : public juce::Component,private juce::Timer {
 public:
     explicit SonariumMeter(SonariumAudioProcessor&);
@@ -50,8 +59,9 @@ private:
     std::vector<Dial> dials;
     SonariumRadar radar;
     SonariumMeter meter;
+    std::array<SonariumTapeReel,2> reels;
     juce::MidiKeyboardComponent keyboardView;
-    juce::TextButton presetPrev,presetNext,saveButton;
+    juce::TextButton presetPrev,presetNext,saveButton,loadButton;
     std::array<juce::TextButton,3> modeButtons;
     std::array<juce::TextButton,3> tapeButtons;
     juce::Label presetLabel,polyLabel;
