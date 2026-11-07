@@ -238,11 +238,17 @@ SonariumAudioProcessorEditor::SonariumAudioProcessorEditor(SonariumAudioProcesso
     addButton(presetPrev,"<<",[this]{processor.loadPreset(processor.getPresetIndex()-1);});
     addButton(presetNext,">>",[this]{processor.loadPreset(processor.getPresetIndex()+1);});
     addButton(saveButton,"SAVE",[this] {
-        juce::FileChooser chooser("Save Sonarium preset",juce::File::getSpecialLocation(juce::File::userDocumentsDirectory),"*.sonarium");
-        if(chooser.browseForFileToSave(true)) {
-            juce::MemoryBlock m;processor.getStateInformation(m);
-            chooser.getResult().replaceWithData(m.getData(),m.getSize());
-        }
+        presetChooser=std::make_unique<juce::FileChooser>("Save Sonarium preset",
+            juce::File::getSpecialLocation(juce::File::userDocumentsDirectory),"*.sonarium");
+        presetChooser->launchAsync(juce::FileBrowserComponent::saveMode|juce::FileBrowserComponent::canSelectFiles,
+            [safe=juce::Component::SafePointer<SonariumAudioProcessorEditor>(this)](const juce::FileChooser& chooser){
+                if(safe==nullptr)return;
+                auto file=chooser.getResult();
+                if(file==juce::File{})return;
+                if(!file.hasFileExtension("sonarium"))file=file.withFileExtension(".sonarium");
+                juce::MemoryBlock data;safe->processor.getStateInformation(data);
+                file.replaceWithData(data.getData(),data.getSize());
+            });
     });
     presetLabel.setText(processor.getPresetName(),juce::dontSendNotification);
     presetLabel.setColour(juce::Label::textColourId,cream);
@@ -301,7 +307,7 @@ void SonariumAudioProcessorEditor::addDial(const char* id,const char* title,floa
         juce::MathConstants<float>::pi*2.76f,true);
     dial.slider->setTextBoxStyle(juce::Slider::NoTextBox,false,0,0);
     dial.slider->setPopupDisplayEnabled(true,true,this);
-    dial.slider->setDoubleClickReturnValue(true,processor.state.getParameter(id)->getDefaultValue());
+    dial.slider->setDoubleClickReturnValue(true,processor.state.getParameter(id)->convertFrom0to1(processor.state.getParameter(id)->getDefaultValue()));
     dial.slider->setTitle(title);dial.slider->setName(title);
     addAndMakeVisible(*dial.slider);
     dial.attach=std::make_unique<juce::AudioProcessorValueTreeState::SliderAttachment>(processor.state,id,*dial.slider);
