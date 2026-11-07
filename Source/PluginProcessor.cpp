@@ -54,7 +54,7 @@ bool SonariumAudioProcessor::isBusesLayoutSupported(const BusesLayout& layout) c
 void SonariumAudioProcessor::prepareToPlay(double sr,int block) {
     currentSampleRate=sr;
     randomState=0x37aacc11u;voiceClock=0;pedal=false;keysDown.fill(false);
-    pitchBend=modWheel=0.0f;wetSmoothed.fill(0.0f);
+    pitchBend=modWheel=0.0f;lastNoteHz=0.0;wetSmoothed.fill(0.0f);
     for(auto& v:voices)v.active=false;
     tape.prepare(sr);
     for(auto& reverb:reverbs) reverb.setSampleRate(sr);
@@ -77,6 +77,8 @@ sonarium::Params SonariumAudioProcessor::snapshot() const noexcept {
 }
 void SonariumAudioProcessor::noteOn(int note,float velocity,int engine,int poly) {
     if(note<0||note>127)return;
+    bool legato=false;
+    for(const auto& v:voices)if(v.active&&v.held)legato=true;
     keysDown[static_cast<size_t>(note)]=true;
     sonarium::Voice* pick=nullptr;
     int running=0;
@@ -86,7 +88,10 @@ void SonariumAudioProcessor::noteOn(int note,float velocity,int engine,int poly)
         for(auto& v:voices)
             if(!pick||(!v.held&&pick->held)||(v.held==pick->held&&v.stamp<pick->stamp))pick=&v;
     }
-    if(pick)pick->start(note,velocity,engine,currentSampleRate,randomState,++voiceClock);
+    const double hz=440.0*std::pow(2.0,(note-69)/12.0);
+    const double previous=(poly==1&&legato&&lastNoteHz>0.0)?lastNoteHz:hz;
+    if(pick)pick->start(note,velocity,engine,currentSampleRate,randomState,++voiceClock,previous);
+    lastNoteHz=hz;
 }
 void SonariumAudioProcessor::noteOff(int note) {
     if(note<0||note>127)return;
