@@ -47,7 +47,7 @@ private:
     float lLevel=0,rLevel=0,masterSmooth=0.75f;
     float pitchBend=0.0f,modWheel=0.0f;
     std::array<float,3> wetSmoothed{};
-    double currentSampleRate=48000.0;
+    double currentSampleRate=48000.0,lastNoteHz=0.0;
     bool pedal=false;
     std::array<bool,128> keysDown{};
     void noteOn(int note,float velocity,int engine,int poly);
