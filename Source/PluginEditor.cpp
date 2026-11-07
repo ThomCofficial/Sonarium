@@ -264,8 +264,9 @@ SonariumAudioProcessorEditor::SonariumAudioProcessorEditor(SonariumAudioProcesso
     addButton(saveButton,"SAVE",[this] {
         presetChooser=std::make_unique<juce::FileChooser>("Save Sonarium preset",
             juce::File::getSpecialLocation(juce::File::userDocumentsDirectory),"*.sonarium");
+        auto editorSafe=juce::Component::SafePointer<SonariumAudioProcessorEditor>(this);
         presetChooser->launchAsync(juce::FileBrowserComponent::saveMode|juce::FileBrowserComponent::canSelectFiles,
-            [safe=juce::Component::SafePointer<SonariumAudioProcessorEditor>(this)](const juce::FileChooser& chooser){
+            [safe=editorSafe](const juce::FileChooser& chooser){
                 if(safe==nullptr)return;
                 auto file=chooser.getResult();
                 if(file==juce::File{})return;
@@ -277,8 +278,9 @@ SonariumAudioProcessorEditor::SonariumAudioProcessorEditor(SonariumAudioProcesso
     addButton(loadButton,"LOAD",[this]{
         presetChooser=std::make_unique<juce::FileChooser>("Load Sonarium preset",
             juce::File::getSpecialLocation(juce::File::userDocumentsDirectory),"*.sonarium");
+        auto editorSafe=juce::Component::SafePointer<SonariumAudioProcessorEditor>(this);
         presetChooser->launchAsync(juce::FileBrowserComponent::openMode|juce::FileBrowserComponent::canSelectFiles,
-            [safe=juce::Component::SafePointer<SonariumAudioProcessorEditor>(this)](const juce::FileChooser& chooser){
+            [safe=editorSafe](const juce::FileChooser& chooser){
                 if(safe==nullptr)return;
                 auto file=chooser.getResult();
                 if(!file.existsAsFile())return;
