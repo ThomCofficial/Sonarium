@@ -45,6 +45,8 @@ private:
     uint64_t voiceClock=0;
     std::atomic<int> presetIndex{0};
     float lLevel=0,rLevel=0,masterSmooth=0.75f;
+    float pitchBend=0.0f,modWheel=0.0f;
+    std::array<float,3> wetSmoothed{};
     double currentSampleRate=48000.0;
     bool pedal=false;
     std::array<bool,128> keysDown{};
