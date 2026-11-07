@@ -54,6 +54,7 @@ bool SonariumAudioProcessor::isBusesLayoutSupported(const BusesLayout& layout) c
 void SonariumAudioProcessor::prepareToPlay(double sr,int block) {
     currentSampleRate=sr;
     randomState=0x37aacc11u;voiceClock=0;pedal=false;keysDown.fill(false);
+    pitchBend=modWheel=0.0f;wetSmoothed.fill(0.0f);
     for(auto& v:voices)v.active=false;
     tape.prepare(sr);
     for(auto& reverb:reverbs) reverb.setSampleRate(sr);
@@ -98,6 +99,7 @@ void SonariumAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,juce:
     const int n=buffer.getNumSamples();
     if(n<=0)return;
     auto p=snapshot();
+    p.pitch=pitchBend;p.mod=modWheel;
     keyboard.processNextMidiBuffer(midi,0,n,true);
     juce::MidiBuffer::Iterator iterator(midi);
     juce::MidiMessage message;int eventSample=0;
@@ -115,8 +117,8 @@ void SonariumAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,juce:
             else if(message.isSustainPedalOff()) {
                 pedal=false;
                 for(auto& v:voices)if(v.active&&!keysDown[static_cast<size_t>(v.note)])v.release();
-            } else if(message.isPitchWheel())p.pitch=(static_cast<float>(message.getPitchWheelValue())-8192.0f)/8192.0f;
-            else if(message.isController()&&message.getControllerNumber()==1)p.mod=message.getControllerValue()/127.0f;
+            } else if(message.isPitchWheel())p.pitch=pitchBend=(static_cast<float>(message.getPitchWheelValue())-8192.0f)/8192.0f;
+            else if(message.isController()&&message.getControllerNumber()==1)p.mod=modWheel=message.getControllerValue()/127.0f;
             more=iterator.getNextEvent(message,eventSample);
         }
         sonarium::Stereo sample{};
@@ -146,8 +148,10 @@ void SonariumAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,juce:
         rp.freezeMode=0.0f;
         reverbs[static_cast<size_t>(k)].setParameters(rp);
         reverbs[static_cast<size_t>(k)].processStereo(rb.getWritePointer(0),rb.getWritePointer(1),n);
-        float amount=amounts[static_cast<size_t>(k)]*(k==1?.40f:.28f);
+        float targetAmount=amounts[static_cast<size_t>(k)]*(k==1?.40f:.28f);
+        auto& amount=wetSmoothed[static_cast<size_t>(k)];
         for(int i=0;i<n;i++) {
+            amount+=(targetAmount-amount)*.00075f;
             l[i]+=rb.getSample(0,i)*amount;
             r[i]+=rb.getSample(1,i)*amount;
         }
