@@ -186,6 +186,29 @@ void SonariumRadar::paint(juce::Graphics& g) {
     g.setColour(aged.withAlpha(.75f));g.drawEllipse(cx-r+10,cy-r+10,2*r-20,2*r-20,2.5f);
 }
 
+SonariumTapeReel::SonariumTapeReel(){startTimerHz(24);setOpaque(false);}
+void SonariumTapeReel::paint(juce::Graphics& g) {
+    const float w=static_cast<float>(getWidth()),h=static_cast<float>(getHeight());
+    if(w<10||h<10)return;
+    g.setColour(deep.withAlpha(.84f));
+    g.fillRoundedRectangle(0,0,w,h,8);
+    g.setColour(brass);g.drawRoundedRectangle(1,1,w-2,h-2,8,2);
+    for(int i=0;i<2;i++){
+        float cx=w*(i==0?.28f:.72f),cy=h*.45f,r=std::min(h*.33f,w*.21f);
+        g.setColour(juce::Colour::fromRGB(81,55,34));g.fillEllipse(cx-r-2,cy-r-2,r*2+4,r*2+4);
+        g.setColour(brass.brighter(.4f));g.drawEllipse(cx-r-2,cy-r-2,r*2+4,r*2+4,2);
+        g.setColour(juce::Colour::fromRGB(171,110,51));g.fillEllipse(cx-r*.84f,cy-r*.84f,r*1.68f,r*1.68f);
+        g.setColour(deep);g.fillEllipse(cx-r*.29f,cy-r*.29f,r*.58f,r*.58f);
+        for(int blade=0;blade<5;blade++){
+            float a=rotation*(i==0?1.0f:-1.0f)+blade*sonarium::tau/5.0f;
+            float rr=r*.64f;
+            g.setColour(cream.withAlpha(.8f));
+            g.fillEllipse(cx+std::cos(a)*rr-r*.12f,cy+std::sin(a)*rr-r*.12f,r*.24f,r*.24f);
+        }
+        g.setColour(ink);g.fillEllipse(cx-3,cy-3,6,6);
+    }
+    g.setColour(cream.withAlpha(.35f));g.drawLine(w*.30f,h*.8f,w*.7f,h*.8f,2);
+}
 SonariumMeter::SonariumMeter(SonariumAudioProcessor& p):processor(p){startTimerHz(28);}
 void SonariumMeter::paint(juce::Graphics& g) {
     auto bounds=getLocalBounds().toFloat();
@@ -221,6 +244,7 @@ SonariumAudioProcessorEditor::SonariumAudioProcessorEditor(SonariumAudioProcesso
     setResizeLimits(1100,620,2400,1350);
     addAndMakeVisible(radar);
     addAndMakeVisible(meter);
+    for(auto& reel:reels)addAndMakeVisible(reel);
 
     const struct {const char* id;const char* title;float x,y,size;} specs[]={
         {"sub","SUB",205,289,75},{"drive","DRIVE",288,289,75},{"mute","MUTE",371,289,75},
@@ -248,6 +272,18 @@ SonariumAudioProcessorEditor::SonariumAudioProcessorEditor(SonariumAudioProcesso
                 if(!file.hasFileExtension("sonarium"))file=file.withFileExtension(".sonarium");
                 juce::MemoryBlock data;safe->processor.getStateInformation(data);
                 file.replaceWithData(data.getData(),data.getSize());
+            });
+    });
+    addButton(loadButton,"LOAD",[this]{
+        presetChooser=std::make_unique<juce::FileChooser>("Load Sonarium preset",
+            juce::File::getSpecialLocation(juce::File::userDocumentsDirectory),"*.sonarium");
+        presetChooser->launchAsync(juce::FileBrowserComponent::openMode|juce::FileBrowserComponent::canSelectFiles,
+            [safe=juce::Component::SafePointer<SonariumAudioProcessorEditor>(this)](const juce::FileChooser& chooser){
+                if(safe==nullptr)return;
+                auto file=chooser.getResult();
+                if(!file.existsAsFile())return;
+                juce::MemoryBlock data;
+                if(file.loadFileAsData(data))safe->processor.setStateInformation(data.getData(),static_cast<int>(data.getSize()));
             });
     });
     presetLabel.setText(processor.getPresetName(),juce::dontSendNotification);
@@ -329,8 +365,10 @@ void SonariumAudioProcessorEditor::resized(){
     };
     put(radar,593,160,455,455);
     put(meter,125,448,418,128);
+    put(reels[0],340,624,115,87);
+    put(reels[1],836,624,105,87);
     for(auto& dial:dials)put(*dial.slider,dial.x-dial.diameter*.5f,dial.y-dial.diameter*.5f,dial.diameter,dial.diameter);
-    put(presetPrev,534,114,65,48);put(presetLabel,600,114,390,48);put(presetNext,989,114,61,48);put(saveButton,1060,114,76,48);
+    put(presetPrev,534,114,65,48);put(presetLabel,600,114,390,48);put(presetNext,989,114,61,48);put(saveButton,1060,114,76,48);put(loadButton,1142,114,76,48);
     for(int i=0;i<3;i++){
         put(modeButtons[static_cast<size_t>(i)],45,600+i*54.0f,185,43);
         put(tapeButtons[static_cast<size_t>(i)],375+i*175.0f,724,154,37);
