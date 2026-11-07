@@ -20,7 +20,7 @@ jobs:
           cmake --build build --config Release --target sonarium_dsp_stress --parallel 2
           ctest --test-dir build -C Release --output-on-failure
       - name: Build synthesizer
-        run: cmake --build build --config Release --target Sonarium_VST3 Sonarium_Standalone --parallel 2
+        run: cmake --build build --config Release --target Sonarium_VST3 --parallel 2
       - name: Bundle VST3 for download
         shell: pwsh
         run: |
