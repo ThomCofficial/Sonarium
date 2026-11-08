@@ -52,6 +52,7 @@ target_sources(Sonarium_UIStress PRIVATE Tests/UISmoke.cpp)
 target_include_directories(Sonarium_UIStress PRIVATE Source)
 target_link_libraries(Sonarium_UIStress PRIVATE Sonarium
     juce::juce_audio_utils juce::juce_gui_extra juce::juce_dsp)
+juce_generate_juce_header(Sonarium_UIStress)
 target_compile_definitions(Sonarium_UIStress PRIVATE
     JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0)
 add_test(NAME SonariumUIStress COMMAND Sonarium_UIStress)
