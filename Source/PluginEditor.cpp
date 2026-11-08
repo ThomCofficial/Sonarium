@@ -425,6 +425,9 @@ void SonariumAudioProcessorEditor::addDial(const char* id,const char* title,floa
 }
 void SonariumAudioProcessorEditor::timerCallback(){
     if (!isShowing()) return;
+    illuminationPhase+=.14f;
+    if(illuminationPhase>sonarium::tau)illuminationPhase-=sonarium::tau;
+    repaint(18,24,115,185); // dynamic glass oscillator lamp, not a baked status light
     presetLabel.setText(processor.getPresetName(),juce::dontSendNotification);
     int mode=static_cast<int>(processor.state.getRawParameterValue("mode")->load());
     int tape=static_cast<int>(processor.state.getRawParameterValue("tape")->load());
@@ -480,6 +483,14 @@ void SonariumAudioProcessorEditor::paint(juce::Graphics& g){
             g.setColour(juce::Colour(0xffc68e48));g.drawEllipse(x-9,y-9,18,18,2.5f);
             g.drawLine(x-5,y+3,x+5,y-3,2);
         }
+    // Signal-driven tube: illumination fluctuates with actual sound, never
+    // merely a decorative baked-in photograph.
+    vacTube(g);
+    const float level=processor.signalActivity.load(std::memory_order_relaxed);
+    const float flicker=.28f+.36f*(.5f+.5f*std::sin(illuminationPhase))+.32f*level;
+    g.setGradientFill(juce::ColourGradient(juce::Colour(0xffffa62a).withAlpha(flicker*.28f),59,109,
+                               juce::Colour(0xffffa62a).withAlpha(0.0f),136,109,true));
+    g.fillEllipse(-14,36,146,146);
     // Deep patinated engraving in the headboard.
     g.setColour(juce::Colour(0xffbf945c).withAlpha(.4f));
     g.drawLine(395,100,1180,100,1.2f);

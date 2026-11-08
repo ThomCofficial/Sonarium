@@ -64,6 +64,7 @@ private:
     void timerCallback() override;
     SonariumAudioProcessor& processor;
     SonariumLook look;
+    float illuminationPhase=0.0f;
     std::vector<Dial> dials;
     SonariumRadar radar;
     SonariumMeter meter;
