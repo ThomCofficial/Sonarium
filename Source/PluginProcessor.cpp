@@ -64,6 +64,7 @@ void SonariumAudioProcessor::prepareToPlay(double sr,int block) {
     interpolatedParams=snapshot();
     masterSmooth=state.getRawParameterValue("master")->load();
     lLevel=rLevel=0;meterL.store(0);meterR.store(0);
+    signalActivity.store(0);voiceCount.store(0);playingNote.store(-1);
 }
 void SonariumAudioProcessor::releaseResources() {}
 sonarium::Params SonariumAudioProcessor::snapshot() const noexcept {
@@ -83,6 +84,7 @@ void SonariumAudioProcessor::noteOn(int note,float velocity,int engine,int poly)
     bool legato=false;
     for(const auto& v:voices)if(v.active&&v.held)legato=true;
     keysDown[static_cast<size_t>(note)]=true;
+    playingNote.store(note,std::memory_order_relaxed);
     sonarium::Voice* pick=nullptr;
     int running=0;
     for(auto& v:voices)if(v.active)++running;
@@ -183,6 +185,9 @@ void SonariumAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,juce:
         rLevel=std::max(std::abs(r[i]),rLevel*.9998f);
     }
     interpolatedParams=p;
+    int sounding=0;for(const auto& v:voices)if(v.active)++sounding;
+    voiceCount.store(sounding,std::memory_order_relaxed);
+    signalActivity.store(sonarium::clamp(std::max(lLevel,rLevel),0.0f,1.0f),std::memory_order_relaxed);
     meterL.store(sonarium::clamp(lLevel,0,1),std::memory_order_relaxed);
     meterR.store(sonarium::clamp(rLevel,0,1),std::memory_order_relaxed);
 }

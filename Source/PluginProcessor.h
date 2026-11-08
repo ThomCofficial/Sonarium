@@ -30,6 +30,8 @@ public:
     APVTS state;
     juce::MidiKeyboardState keyboard;
     std::atomic<float> meterL{0},meterR{0};
+    std::atomic<float> signalActivity{0};
+    std::atomic<int> playingNote{-1},voiceCount{0};
     void loadPreset(int index);
     int getPresetIndex() const noexcept {return presetIndex.load();}
     juce::String getPresetName() const;

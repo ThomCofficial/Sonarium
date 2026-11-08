@@ -14,12 +14,15 @@ class SonariumRadar final : public juce::Component,private juce::Timer {
 public:
     explicit SonariumRadar(SonariumAudioProcessor&);
     void paint(juce::Graphics&) override;
+    void mouseDown(const juce::MouseEvent&) override;
+    void mouseDrag(const juce::MouseEvent&) override;
     // Deterministic frame stepping also allows headless image regression tests.
     void advanceFrame() noexcept {angle=std::fmod(angle+.041f,sonarium::tau); repaint();}
     float getSweepAngle() const noexcept {return angle;}
 private:
     void timerCallback() override {if(isShowing())advanceFrame();}
     SonariumAudioProcessor& processor;
+    void interact(juce::Point<float>);
     float angle=0.0f;
 };
 

@@ -126,7 +126,19 @@ void SonariumLook::drawButtonText(juce::Graphics& g,juce::TextButton& button,boo
     g.drawFittedText(button.getButtonText(),button.getLocalBounds(),juce::Justification::centred,1);
 }
 
-SonariumRadar::SonariumRadar(SonariumAudioProcessor& p):processor(p){setOpaque(false);startTimerHz(30);}
+SonariumRadar::SonariumRadar(SonariumAudioProcessor& p):processor(p){setOpaque(false);setTooltip("SONAR — drag in the display to control depth and transmitter pulse");startTimerHz(30);}
+void SonariumRadar::mouseDown(const juce::MouseEvent& e){interact(e.position);}
+void SonariumRadar::mouseDrag(const juce::MouseEvent& e){interact(e.position);}
+void SonariumRadar::interact(juce::Point<float> pt){
+    const auto d=pt-getLocalBounds().toFloat().getCentre();
+    const float rr=std::min(getWidth(),getHeight())*.47f;
+    if(rr<=0)return;
+    float distance=sonarium::clamp(std::sqrt(d.x*d.x+d.y*d.y)/rr,0,1);
+    float a=std::atan2(d.x,-d.y);if(a<0)a+=sonarium::tau;
+    if(auto* param=processor.state.getParameter("depth"))param->setValueNotifyingHost(param->convertTo0to1(distance));
+    if(auto* param=processor.state.getParameter("ping"))param->setValueNotifyingHost(param->convertTo0to1(a/sonarium::tau));
+}
+
 void SonariumRadar::paint(juce::Graphics& g) {
     auto w=static_cast<float>(getWidth()),h=static_cast<float>(getHeight());
     auto cx=w*.5f,cy=h*.5f,r=std::min(w,h)*.47f;
@@ -159,10 +171,14 @@ void SonariumRadar::paint(juce::Graphics& g) {
     g.drawLine(cx,cy,cx+std::sin(angle)*r*.95f,cy-std::cos(angle)*r*.95f,2.7f);
     auto get=[this](const char* id){return processor.state.getRawParameterValue(id)->load();};
     float contour=get("depth")*.5f+get("texture")*.5f;
+    const float output=processor.signalActivity.load(std::memory_order_relaxed);
+    const int playing=processor.voiceCount.load(std::memory_order_relaxed);
+    const int note=processor.playingNote.load(std::memory_order_relaxed);
+    const int mode=juce::jlimit(0,2,int(processor.state.getRawParameterValue("mode")->load()));
     juce::Path seabed;
     for(int x=0;x<=static_cast<int>(w);x+=3){
         float xx=static_cast<float>(x);
-        float yy=cy+r*.49f+22*std::sin(xx*.023f)+14*std::sin(xx*.063f+angle*.27f)+contour*28*std::sin(xx*.095f);
+        float yy=cy+r*.49f+(12+output*30)*std::sin(xx*(mode==0?.052f:mode==1?.023f:.082f)+angle*.8f)+14*std::sin(xx*.063f+angle*.27f)+contour*18*std::sin(xx*.095f);
         if(x==0)seabed.startNewSubPath(xx,yy);else seabed.lineTo(xx,yy);
     }
     g.setColour(green.withAlpha(.42f));g.strokePath(seabed,juce::PathStrokeType(6));
@@ -171,6 +187,14 @@ void SonariumRadar::paint(juce::Graphics& g) {
         float x=cx+std::sin(i*6.41f)*r*.81f,y=cy+std::cos(i*3.41f)*r*.81f;
         float alpha=.10f+.35f*(.5f+.5f*std::sin(angle*1.3f+i*2.4f));
         g.setColour(green.withAlpha(alpha));g.fillEllipse(x-2,y-2,4,4);
+    }
+    if(playing>0&&note>=0){
+        const float d=sonarium::clamp((note-24)/72.0f,.1f,.9f)*r;
+        const float ax=angle*.33f+note*.11f;
+        const float px=cx+std::sin(ax)*d,py=cy-std::cos(ax)*d;
+        g.setGradientFill(juce::ColourGradient(green.withAlpha(.4f*output+.12f),px,py,green.withAlpha(0),px+24,py+24,true));
+        g.fillEllipse(px-24,py-24,48,48);
+        g.setColour(green);g.fillEllipse(px-3,py-3,6,6);
     }
     g.setColour(green);g.fillEllipse(cx-4,cy-4,8,8);
     g.setColour(green.withAlpha(.83f));
@@ -183,6 +207,8 @@ void SonariumRadar::paint(juce::Graphics& g) {
         float x=cx+std::sin(a)*(r+1),y=cy-std::cos(a)*(r+1);
         g.setColour(brass.brighter(.24f));g.fillEllipse(x-4,y-4,8,8);
     }
+    g.setColour(green.withAlpha(.8f));
+    g.drawText((mode==0?"LOW FREQ / SUB":mode==1?"POLYVOLT / DRIFT":"TX / RX SONAR")+juce::String("   ")+juce::String(int(output*100))+"%",juce::Rectangle<int>(int(cx-r*.6f),int(cy+r*.7f),int(r*1.2f),18),juce::Justification::centred);
     g.setColour(aged.withAlpha(.75f));g.drawEllipse(cx-r+10,cy-r+10,2*r-20,2*r-20,2.5f);
 }
 
