@@ -15,22 +15,38 @@ void label(juce::Graphics& g,const juce::String& text,float x,float y,float w,fl
     g.setFont(juce::Font(juce::FontOptions("Georgia",size,bold?juce::Font::bold:juce::Font::plain)));
     g.drawText(text,juce::Rectangle<float>(x,y,w,h),juce::Justification::centred,false);
 }
-void plate(juce::Graphics& g,juce::Rectangle<float> r,float corner=20.0f){
-    g.setColour(juce::Colours::black.withAlpha(.43f));g.fillRoundedRectangle(r.translated(4,6),corner);
-    g.setGradientFill(juce::ColourGradient(cream,r.getX(),r.getY(),aged.darker(.27f),r.getRight(),r.getBottom(),false));
-    g.fillRoundedRectangle(r,corner);
-    g.setColour(ink.withAlpha(.69f));g.drawRoundedRectangle(r,corner,3);
-    g.setColour(brass.brighter(.5f).withAlpha(.55f));g.drawRoundedRectangle(r.reduced(6),corner-4,1.3f);
-    for(float x:{r.getX()+14,r.getRight()-14})
-        for(float y:{r.getY()+14,r.getBottom()-14}){
-            g.setColour(ink.darker());g.fillEllipse(x-4,y-4,8,8);
-            g.setColour(brass.brighter());g.drawLine(x-2,y-2,x+2,y+2,.9f);
+void plate(juce::Graphics& g,juce::Rectangle<float> r,float corner=16.0f){
+    // Deep walnut shadow, aged metal bevel and engraved edge.
+    g.setColour(juce::Colour(0xff130d0b).withAlpha(.87f));
+    g.fillRoundedRectangle(r.translated(4.0f,7.0f),corner);
+    juce::ColourGradient fill(juce::Colour(0xffd5b47e),r.getX(),r.getY(),
+                              juce::Colour(0xff705133),r.getRight(),r.getBottom(),false);
+    fill.addColour(.18,juce::Colour(0xffbaa076));
+    fill.addColour(.51,juce::Colour(0xff80613d));
+    fill.addColour(.77,juce::Colour(0xffa78651));
+    g.setGradientFill(fill);g.fillRoundedRectangle(r,corner);
+    g.setColour(juce::Colour(0xff29180f));g.drawRoundedRectangle(r,corner,3.3f);
+    g.setColour(juce::Colour(0xfff3d7a2).withAlpha(.55f));
+    g.drawRoundedRectangle(r.reduced(4.1f),corner-2,1.3f);
+    g.setColour(juce::Colour(0xff3c2919).withAlpha(.55f));
+    g.drawRoundedRectangle(r.reduced(8.3f),corner-5,1.2f);
+    for(const float x:{r.getX()+17,r.getRight()-17})
+        for(const float y:{r.getY()+17,r.getBottom()-17}){
+            g.setColour(juce::Colour(0xff281810));g.fillEllipse(x-6,y-6,12,12);
+            g.setColour(juce::Colour(0xffecc48a));g.drawEllipse(x-5,y-5,10,10,1.5f);
+            g.setColour(juce::Colour(0xff5b3821));g.drawLine(x-3,y+2,x+3,y-2,1.4f);
         }
 }
-void banner(juce::Graphics& g,juce::Rectangle<float> r,const juce::String& text) {
-    plate(g,r,12);
-    label(g,text,r.getX(),r.getY()+3,r.getWidth(),r.getHeight()-7,32,true);
+
+void banner(juce::Graphics& g,juce::Rectangle<float> r,const juce::String& text){
+    plate(g,r,8.0f);
+    g.setGradientFill(juce::ColourGradient(juce::Colour(0xff523820),r.getX(),r.getY(),
+        juce::Colour(0xff20140e),r.getRight(),r.getBottom(),false));
+    g.fillRoundedRectangle(r.reduced(7.0f,6.0f),5.0f);
+    g.setColour(juce::Colour(0xffefc685));g.drawRoundedRectangle(r.reduced(7.0f,6.0f),5.0f,1.0f);
+    label(g,text,r.getX(),r.getY()+3,r.getWidth(),r.getHeight()-7,26,true,cream);
 }
+
 void mapMotif(juce::Graphics& g) {
     g.setColour(ink.withAlpha(.20f));
     for(int i=0;i<14;i++){
@@ -73,42 +89,72 @@ void vacTube(juce::Graphics& g) {
     g.setColour(ink);g.fillRect(30.0f,181.0f,59.0f,20.0f);
     g.setColour(brass);g.drawRect(30,181,59,20,3);
 }
-void section(juce::Graphics& g,const juce::String& title,juce::Rectangle<float> body) {
-    plate(g,body,16);
-    juce::Rectangle<float> tag(body.getCentreX()-body.getWidth()*.34f,body.getY()-18,body.getWidth()*.68f,48);
+void section(juce::Graphics& g,const juce::String& title,juce::Rectangle<float> body){
+    plate(g,body,17);
+    auto tag=juce::Rectangle<float>(body.getCentreX()-body.getWidth()*.29f,body.getY()-21,
+                                     body.getWidth()*.58f,49);
     banner(g,tag,title);
 }
+
+
 }
 
-void SonariumLook::drawRotarySlider(juce::Graphics& g,int x,int y,int width,int height,float pos,float start,float end,juce::Slider&) {
-    auto b=juce::Rectangle<float>(static_cast<float>(x),static_cast<float>(y),static_cast<float>(width),static_cast<float>(height));
-    auto c=b.getCentre();
-    float radius=std::min(b.getWidth(),b.getHeight())*.40f;
-    float a=start+pos*(end-start);
-    g.setColour(ink.withAlpha(.6f));g.fillEllipse(c.x-radius-5,c.y-radius-3,2*radius+10,2*radius+10);
-    g.setColour(juce::Colour::fromRGB(75,51,30));
-    g.fillEllipse(c.x-radius-2,c.y-radius-2,2*radius+4,2*radius+4);
-    g.setColour(brass.brighter(.56f));g.drawEllipse(c.x-radius-2,c.y-radius-2,2*radius+4,2*radius+4,3);
-    auto angle0=start,angle1=end;
-    juce::Path ticks;
-    for(int i=0;i<=10;i++){
-        float t=angle0+(angle1-angle0)*i/10.0f;
-        float s=radius+6,e=radius+(i%5==0?14:10);
-        ticks.startNewSubPath(c.x+std::sin(t)*s,c.y-std::cos(t)*s);
-        ticks.lineTo(c.x+std::sin(t)*e,c.y-std::cos(t)*e);
+void SonariumLook::drawRotarySlider(juce::Graphics& g,int x,int y,int w,int h,float pos,float start,float end,juce::Slider&){
+    if(w<16||h<16)return;
+    const auto rect=juce::Rectangle<float>(float(x),float(y),float(w),float(h));
+    const auto c=rect.getCentre();
+    const float radius=std::min(rect.getWidth(),rect.getHeight())*.365f;
+    const float angle=start+pos*(end-start);
+    // Faceplate engraving remains stationary as only the pointer moves.
+    g.setColour(juce::Colour(0xff2c1b12).withAlpha(.7f));
+    g.fillEllipse(c.x-radius-7,c.y-radius-4,2*radius+14,2*radius+14);
+    g.setColour(juce::Colour(0xfff3d09a));
+    g.drawEllipse(c.x-radius-3,c.y-radius-3,radius*2+6,radius*2+6,1.5f);
+    for(int i=0;i<13;i++){
+        float a=start+(end-start)*float(i)/12.0f;
+        float inner=radius+7,outer=inner+(i%3==0?8.5f:4.0f);
+        g.setColour(juce::Colour(0xff382719));
+        g.drawLine(c.x+std::sin(a)*inner,c.y-std::cos(a)*inner,
+                   c.x+std::sin(a)*outer,c.y-std::cos(a)*outer,1.4f);
     }
-    g.setColour(ink.withAlpha(.74f));g.strokePath(ticks,juce::PathStrokeType(1.45f));
-    juce::ColourGradient metal(juce::Colour::fromRGB(252,207,127),c.x-radius,c.y-radius,
-       juce::Colour::fromRGB(90,55,30),c.x+radius,c.y+radius,false);
-    metal.addColour(.43,juce::Colour::fromRGB(188,127,65));
-    g.setGradientFill(metal);g.fillEllipse(c.x-radius,c.y-radius,2*radius,2*radius);
-    g.setColour(cream.withAlpha(.48f));g.drawEllipse(c.x-radius+5,c.y-radius+5,2*radius-10,2*radius-10,1);
-    g.setColour(ink.withAlpha(.57f));g.drawEllipse(c.x-radius,c.y-radius,2*radius,2*radius,1.6f);
-    g.setColour(deep);g.drawLine(c.x,c.y,c.x+std::sin(a)*radius*.84f,c.y-std::cos(a)*radius*.84f,6.0f);
-    g.setColour(cream);g.drawLine(c.x,c.y,c.x+std::sin(a)*radius*.79f,c.y-std::cos(a)*radius*.79f,2.2f);
-    g.setColour(juce::Colour::fromRGB(255,165,57).withAlpha(pos>.7f?.7f:.2f));
-    g.drawEllipse(c.x-radius-5,c.y-radius-5,radius*2+10,radius*2+10,1.3f);
+    juce::ColourGradient rim(juce::Colour(0xffedcf8c),c.x-radius,c.y-radius,
+                             juce::Colour(0xff56351d),c.x+radius,c.y+radius,false);
+    rim.addColour(.21,juce::Colour(0xffa16c36));
+    rim.addColour(.54,juce::Colour(0xffe7b86c));
+    rim.addColour(.81,juce::Colour(0xff83542e));
+    g.setGradientFill(rim);
+    g.fillEllipse(c.x-radius,c.y-radius,2*radius,2*radius);
+    g.setColour(juce::Colour(0xff21150e));
+    g.drawEllipse(c.x-radius,c.y-radius,2*radius,2*radius,2.2f);
+    // Machined knurl notches (static outer housing).
+    for(int i=0;i<40;i++){
+        const float a=float(i)*sonarium::tau/40.0f;
+        const float rin=radius*.83f,rout=radius*.97f;
+        g.setColour(i%2==0?juce::Colour(0xff492b15):juce::Colour(0xffe4af63));
+        g.drawLine(c.x+std::sin(a)*rin,c.y-std::cos(a)*rin,
+                   c.x+std::sin(a)*rout,c.y-std::cos(a)*rout,.95f);
+    }
+    const float inner=radius*.77f;
+    juce::ColourGradient cap(juce::Colour(0xfff8d499),c.x-inner,c.y-inner,
+                             juce::Colour(0xff5f3e23),c.x+inner,c.y+inner,false);
+    cap.addColour(.45,juce::Colour(0xffaa733e));
+    g.setGradientFill(cap);g.fillEllipse(c.x-inner,c.y-inner,2*inner,2*inner);
+    g.setColour(juce::Colour(0xffefce9b).withAlpha(.7f));
+    g.drawEllipse(c.x-inner+2,c.y-inner+2,2*inner-4,2*inner-4,1.2f);
+    // Glossy recessed centre and fully parameter-driven indicator.
+    g.setColour(juce::Colour(0xff2b190f).withAlpha(.4f));
+    g.fillEllipse(c.x-5,c.y-5,10,10);
+    const float pLen=radius*.75f;
+    g.setColour(juce::Colour(0xff29180f));
+    g.drawLine(c.x+std::sin(angle)*radius*.18f,c.y-std::cos(angle)*radius*.18f,
+               c.x+std::sin(angle)*pLen,c.y-std::cos(angle)*pLen,5.5f);
+    g.setColour(juce::Colour(0xffffd999));
+    g.drawLine(c.x+std::sin(angle)*radius*.28f,c.y-std::cos(angle)*radius*.28f,
+               c.x+std::sin(angle)*pLen,c.y-std::cos(angle)*pLen,2.4f);
+    const auto led=juce::Colour(0xffffad42).withAlpha(.32f+.58f*pos);
+    g.setColour(led);g.fillEllipse(c.x-3,c.y-radius-7,6,6);
 }
+
 void SonariumLook::drawButtonBackground(juce::Graphics& g,juce::Button& button,const juce::Colour&,bool hovering,bool down) {
     auto b=button.getLocalBounds().toFloat().reduced(1.5f);
     auto selected=button.getToggleState();
@@ -407,64 +453,102 @@ void SonariumAudioProcessorEditor::resized(){
     put(keyboardView,302,788,1259,99);
 }
 void SonariumAudioProcessorEditor::paint(juce::Graphics& g){
-    g.fillAll(deep);
-    juce::Graphics::ScopedSaveState s(g);
+    g.fillAll(juce::Colour(0xff100d0b));
+    juce::Graphics::ScopedSaveState save(g);
     g.addTransform(juce::AffineTransform::scale(getWidth()/W,getHeight()/H));
-    juce::ColourGradient paper(juce::Colour::fromRGB(225,185,123),0,0,
-        juce::Colour::fromRGB(241,214,166),W*.62f,H*.70f,false);
-    paper.addColour(.35,juce::Colour::fromRGB(235,205,158));
-    g.setGradientFill(paper);g.fillRect(0.0f,0.0f,W,H);
-    std::minstd_rand rng(248801);
-    for(int i=0;i<3600;i++) {
-        float x=static_cast<float>(rng()%1600),y=static_cast<float>(rng()%900);
-        float a=static_cast<float>(rng()%12)/150.0f;
-        g.setColour((rng()%2?ink:cream).withAlpha(a));
-        g.fillRect(x,y,1.0f+static_cast<float>(rng()%3),1.0f);
+    // Cabinet and physically layered brass platework. The background is
+    // not a static image: knobs, meter, radar, buttons and reels remain
+    // independently composited native JUCE components above this faceplate.
+    juce::ColourGradient walnut(juce::Colour(0xff3e281b),0,0,
+                                 juce::Colour(0xff120d0b),W,H,false);
+    walnut.addColour(.35,juce::Colour(0xff56331d));
+    walnut.addColour(.65,juce::Colour(0xff24160f));
+    g.setGradientFill(walnut);g.fillRoundedRectangle(3,4,1594,892,24);
+    g.setColour(juce::Colour(0xff080605));g.drawRoundedRectangle(5,5,1590,886,23,8);
+    g.setColour(juce::Colour(0xffc99b5a));g.drawRoundedRectangle(12,12,1576,876,19,3);
+    // Fine engraved crosshatching and age, deterministic every repaint.
+    std::minstd_rand rng(1827);
+    for(int i=0;i<2400;i++){
+        float x=float(rng()%1590)+5,y=float(rng()%885)+5;
+        const float alpha=.014f+.015f*float(rng()%10)/10;
+        g.setColour((i%3?juce::Colour(0xffedc98e):juce::Colour(0xff160e09)).withAlpha(alpha));
+        g.fillRect(x,y,1.0f+float(rng()%6),.6f);
     }
-    mapMotif(g);lighthouse(g);ship(g);vacTube(g);
-    g.setColour(deep);g.drawRoundedRectangle(juce::Rectangle<float>(6,6,1588,888),28,10);
-    g.setColour(brass.brighter(.6f));g.drawRoundedRectangle(juce::Rectangle<float>(12,11,1576,878),24,3);
-    for(float x:{18.0f,1582.0f})for(float y:{18.0f,882.0f}) {
-        g.setColour(ink);g.fillEllipse(x-8,y-8,16,16);
-        g.setColour(brass.brighter());g.drawEllipse(x-7,y-7,14,14,2);
-        g.drawLine(x-4,y-4,x+4,y+4,2);
-    }
-    label(g,"SONARIUM",412,4,760,90,76,true,ink);
-    label(g,"M A R I N E   T E S T   S Y N T H E S I Z E R",514,84,580,26,17,false);
-    g.setColour(ink.withAlpha(.52f));g.drawLine(470,110,1102,110,1.3f);
-    plate(g,juce::Rectangle<float>(515,110,639,57),13);
-    g.setColour(deep);g.fillRoundedRectangle(juce::Rectangle<float>(600,116,390,45),8);
-    section(g,"B A S S",juce::Rectangle<float>(122,216,460,164));
-    section(g,"P A D",juce::Rectangle<float>(1070,216,502,164));
-    section(g,"S O N A R",juce::Rectangle<float>(1070,421,502,158));
-    plate(g,juce::Rectangle<float>(115,432,439,153),13);
-    // Helm and vintage radio knobs
-    g.setColour(ink.withAlpha(.54f));g.drawEllipse(12,548,246,246,3);
-    g.setColour(brass);g.drawEllipse(24,560,218,218,9);
-    g.setColour(ink);g.drawLine(125,572,125,769,4);g.drawLine(34,663,222,663,4);
-    label(g,"SIGNAL SOURCE",43,580,170,29,20,true);
-    plate(g,juce::Rectangle<float>(310,598,648,162),16);
-    banner(g,juce::Rectangle<float>(488,588,285,44),"T A P E   E C H O");
-    section(g,"R E V E R B",juce::Rectangle<float>(988,602,406,155));
-    banner(g,juce::Rectangle<float>(1432,608,133,46),"OUTPUT");
-    // faux tape reel etching
-    for(float xx:{358.0f,875.0f}){
-        g.setColour(ink.withAlpha(.15f));
-        g.drawEllipse(xx-18,620,69,69,2);
-        for(int a=0;a<3;a++){
-            float angle=a*sonarium::tau/3;
-            g.drawLine(xx+17,654,xx+17+std::cos(angle)*27,654+std::sin(angle)*27,3);
+    for(float x:{25.0f,1574.0f})
+        for(float y:{26.0f,872.0f}){
+            g.setColour(juce::Colour(0xff21150e));g.fillEllipse(x-12,y-12,24,24);
+            g.setColour(juce::Colour(0xffc68e48));g.drawEllipse(x-9,y-9,18,18,2.5f);
+            g.drawLine(x-5,y+3,x+5,y-3,2);
         }
+    // Deep patinated engraving in the headboard.
+    g.setColour(juce::Colour(0xffbf945c).withAlpha(.4f));
+    g.drawLine(395,100,1180,100,1.2f);
+    g.drawLine(430,104,1140,104,.5f);
+    label(g,"SONARIUM",420,9,766,91,71,true,juce::Colour(0xffecc78b));
+    label(g,"M A R I N E    T E S T    S Y N T H E S I Z E R",
+          472,94,650,25,17,true,juce::Colour(0xffe8bd80));
+    label(g,"THOMC  /  INSTRUMENTS",1295,39,241,28,15,false,juce::Colour(0xffcdab79));
+    label(g,"PLATE  07   •   MMXXVI",60,34,265,27,15,false,juce::Colour(0xffd0a976));
+    // Architectural panels and labels.
+    section(g,"B A S S",juce::Rectangle<float>(117,224,463,186));
+    section(g,"P A D",juce::Rectangle<float>(1067,224,504,186));
+    section(g,"S O N A R",juce::Rectangle<float>(1067,428,504,180));
+    plate(g,juce::Rectangle<float>(111,431,445,163),17);
+    label(g,"DUAL SIGNAL METERS",164,426,333,22,16,true,juce::Colour(0xffe8c18b));
+    plate(g,juce::Rectangle<float>(310,609,650,167),17);
+    banner(g,juce::Rectangle<float>(498,592,275,48),"T A P E    E C H O");
+    section(g,"R E V E R B",juce::Rectangle<float>(988,619,415,155));
+    banner(g,juce::Rectangle<float>(1430,620,139,46),"MASTER");
+    plate(g,juce::Rectangle<float>(22,584,252,182),19);
+    label(g,"SIGNAL  /  SOURCE",34,565,213,28,17,true,juce::Colour(0xffe8c18b));
+    plate(g,juce::Rectangle<float>(14,780,280,112),11);
+    plate(g,juce::Rectangle<float>(297,780,1270,112),10);
+    // Floating black glass preset display below title.
+    plate(g,juce::Rectangle<float>(513,116,714,67),11);
+    g.setGradientFill(juce::ColourGradient(juce::Colour(0xff16120e),600,126,
+                                            juce::Colour(0xff42301e),1010,171,false));
+    g.fillRoundedRectangle(598,122,395,56,9);
+    g.setColour(juce::Colour(0xffd2a873));g.drawRoundedRectangle(598,122,395,56,9,1.1f);
+    // Draw fine engine strip around radar porthole (radar itself is a separate
+    // animated instrument with real input telemetry).
+    g.setColour(juce::Colour(0xff8f6237).withAlpha(.37f));
+    for(int a=0;a<360;a+=12){
+        float theta=a*sonarium::pi/180.0f;
+        g.drawLine(820+std::cos(theta)*223,389+std::sin(theta)*223,
+                   820+std::cos(theta)*229,389+std::sin(theta)*229,1.2f);
     }
-    plate(g,juce::Rectangle<float>(18,779,285,112),14);
-    plate(g,juce::Rectangle<float>(297,774,1276,118),9);
-    label(g,"41° 17' N  /  70° 56' W",1310,25,270,35,15);
-    label(g,"PL. 07",180,30,110,30,17);
-    label(g,"SONARIUM  •  THOMC  •  MMXXVI",1210,743,340,25,12);
-    for(const auto& d:dials){
-        float dy=d.diameter*.5f+12;
-        label(g,d.label,d.x-67,d.y+dy,134,23,d.diameter<70?16:17,true);
+    // Small engraved maritime compass to anchor the empty upper corner.
+    const float mx=1425,my=149;
+    g.setColour(juce::Colour(0xffc9a36f).withAlpha(.68f));
+    g.drawEllipse(mx-28,my-28,56,56,1.5f);
+    g.drawLine(mx-35,my,mx+35,my,.8f);
+    g.drawLine(mx,my-35,mx,my+35,.8f);
+    juce::Path needle;needle.addTriangle(mx,my-27,mx-7,my+12,mx+7,my+12);
+    g.fillPath(needle);
+    label(g,"N",mx-14,my-51,28,23,17,true,cream);
+    // Matching lighthouse silhouette on the other side.
+    g.setColour(juce::Colour(0xffad8656).withAlpha(.65f));
+    juce::Path tower;tower.startNewSubPath(99,164);tower.lineTo(108,92);
+    tower.lineTo(128,92);tower.lineTo(138,164);tower.closeSubPath();g.fillPath(tower);
+    g.fillRect(103.0f,89.0f,29.0f,7.0f);
+    g.drawLine(101,84,118,63,2);g.drawLine(118,63,133,84,2);
+    g.setColour(juce::Colour(0xffffb84a).withAlpha(.2f));
+    juce::Path beam;beam.addTriangle(118,97,165,57,273,79);g.fillPath(beam);
+    // Individual brass calibration legends are in precise positions below
+    // each rotary; never print over the tape switches or keyboard.
+    for(const auto& dial:dials){
+        const float bottom=dial.y+dial.diameter*.5f+11;
+        g.setColour(juce::Colour(0xff452c1b));
+        g.drawLine(dial.x-18,bottom-2,dial.x+18,bottom-2,.8f);
+        label(g,dial.label,dial.x-64,bottom,128,24,15.5f,true,ink);
     }
-    label(g,"TAPE CHARACTER",465,699,445,26,16,true);
-    label(g,"POLY",32,837,94,26,18,true);
+    label(g,"RX  •  TX",706,612,224,20,13,true,juce::Colour(0xffeac694));
+    label(g,"ROOM  •  BLOOM  •  PLATE",1000,747,385,15,11,false,juce::Colour(0xff4e331f));
+    label(g,"TAPE SPEED / COLOUR",523,744,223,23,12,false,juce::Colour(0xffdac298));
+    label(g,"SONARIUM   /   THOMC   /   2026",1408,756,179,17,10,false,juce::Colour(0xffd1a46e));
+    label(g,"VOICES",31,810,118,28,20,true,ink);
+    label(g,"MIDI POLYPHONY",37,861,126,20,12,false,ink);
+}
+
+
 }
