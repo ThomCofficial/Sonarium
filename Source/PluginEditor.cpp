@@ -91,7 +91,7 @@ void vacTube(juce::Graphics& g) {
 }
 void section(juce::Graphics& g,const juce::String& title,juce::Rectangle<float> body){
     plate(g,body,17);
-    auto tag=juce::Rectangle<float>(body.getCentreX()-body.getWidth()*.29f,body.getY()-21,
+    auto tag=juce::Rectangle<float>(body.getCentreX()-body.getWidth()*.29f,body.getY()-49,
                                      body.getWidth()*.58f,49);
     banner(g,tag,title);
 }
@@ -325,7 +325,7 @@ SonariumAudioProcessorEditor::SonariumAudioProcessorEditor(SonariumAudioProcesso
         {"pluck","PLUCK",1346,493,65},{"sea","SEA",1426,493,65},{"signal","SIGNAL",1506,493,65},
         {"tapetime","TIME",543,660,70},{"tapefb","FEEDBACK",656,660,70},{"tapemix","MIX",769,660,70},
         {"room","ROOM",1050,658,69},{"bloom","BLOOM",1162,658,69},{"plate","PLATE",1274,658,69},
-        {"glide","GLIDE",236,720,64},{"master","MASTER",1486,672,70}
+        {"glide","GLIDE",268,703,64},{"master","MASTER",1486,672,70}
     };
     for(const auto& a:specs)addDial(a.id,a.title,a.x,a.y,a.size);
 
@@ -394,8 +394,9 @@ SonariumAudioProcessorEditor::SonariumAudioProcessorEditor(SonariumAudioProcesso
     keyboardView.setColour(juce::MidiKeyboardComponent::keyDownOverlayColourId,juce::Colours::orange.withAlpha(.5f));
     addAndMakeVisible(keyboardView);
     setResizable(true,true);
-    setResizeLimits(1100,620,2400,1350);
-    setSize(1600,900);
+    setResizeLimits(1000,563,1600,900);
+    if(auto* c=getConstrainer())c->setFixedAspectRatio(1600.0/900.0);
+    setSize(1280,720);
     startTimerHz(12);
 }
 
@@ -442,7 +443,7 @@ void SonariumAudioProcessorEditor::resized(){
     auto put=[this,sx,sy](juce::Component& c,float x,float y,float w,float h){
         c.setBounds(juce::roundToInt(x*sx),juce::roundToInt(y*sy),juce::roundToInt(w*sx),juce::roundToInt(h*sy));
     };
-    put(radar,593,160,455,455);
+    put(radar,609,174,418,418);
     put(meter,125,448,418,128);
     put(reels[0],340,624,115,87);
     put(reels[1],836,624,105,87);
@@ -450,7 +451,7 @@ void SonariumAudioProcessorEditor::resized(){
     put(presetPrev,534,114,65,48);put(presetLabel,600,114,390,48);put(presetNext,989,114,61,48);put(saveButton,1060,114,76,48);put(loadButton,1142,114,76,48);
     for(int i=0;i<3;i++){
         put(modeButtons[static_cast<size_t>(i)],45,600+i*54.0f,185,43);
-        put(tapeButtons[static_cast<size_t>(i)],375+i*175.0f,724,154,37);
+        put(tapeButtons[static_cast<size_t>(i)],375+i*175.0f,735,154,35);
     }
     put(polyLabel,37,795,120,34);put(*polySlider,156,797,129,31);
     put(keyboardView,302,788,1259,99);
@@ -507,9 +508,9 @@ void SonariumAudioProcessorEditor::paint(juce::Graphics& g){
     plate(g,juce::Rectangle<float>(111,431,445,163),17);
     label(g,"DUAL SIGNAL METERS",164,426,333,22,16,true,juce::Colour(0xffe8c18b));
     plate(g,juce::Rectangle<float>(310,609,650,167),17);
-    banner(g,juce::Rectangle<float>(498,592,275,48),"T A P E    E C H O");
+    banner(g,juce::Rectangle<float>(498,572,275,48),"T A P E    E C H O");
     section(g,"R E V E R B",juce::Rectangle<float>(988,619,415,155));
-    banner(g,juce::Rectangle<float>(1430,620,139,46),"MASTER");
+    banner(g,juce::Rectangle<float>(1430,580,139,46),"MASTER");
     plate(g,juce::Rectangle<float>(22,584,252,182),19);
     label(g,"SIGNAL  /  SOURCE",34,565,213,28,17,true,juce::Colour(0xffe8c18b));
     plate(g,juce::Rectangle<float>(14,780,280,112),11);

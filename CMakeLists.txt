@@ -28,6 +28,10 @@ target_sources(Sonarium PRIVATE
 target_compile_definitions(Sonarium PUBLIC
     JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0 JUCE_VST3_CAN_REPLACE_VST2=0
     JUCE_REPORT_APP_USAGE=0)
+if(MSVC)
+    # Prevent Windows source-codepage mojibake in engraved labels and glyphs.
+    target_compile_options(Sonarium PRIVATE /utf-8)
+endif()
 target_link_libraries(Sonarium PRIVATE
     juce::juce_audio_utils
     juce::juce_dsp
