@@ -172,7 +172,7 @@ void SonariumLook::drawButtonText(juce::Graphics& g,juce::TextButton& button,boo
     g.drawFittedText(button.getButtonText(),button.getLocalBounds(),juce::Justification::centred,1);
 }
 
-SonariumRadar::SonariumRadar(SonariumAudioProcessor& p):processor(p){setOpaque(false);setTooltip("SONAR — drag in the display to control depth and transmitter pulse");startTimerHz(30);}
+SonariumRadar::SonariumRadar(SonariumAudioProcessor& p):processor(p){setOpaque(false);startTimerHz(30);}
 void SonariumRadar::mouseDown(const juce::MouseEvent& e){interact(e.position);}
 void SonariumRadar::mouseDrag(const juce::MouseEvent& e){interact(e.position);}
 void SonariumRadar::interact(juce::Point<float> pt){
@@ -238,7 +238,7 @@ void SonariumRadar::paint(juce::Graphics& g) {
         const float d=sonarium::clamp((note-24)/72.0f,.1f,.9f)*r;
         const float ax=angle*.33f+note*.11f;
         const float px=cx+std::sin(ax)*d,py=cy-std::cos(ax)*d;
-        g.setGradientFill(juce::ColourGradient(green.withAlpha(.4f*output+.12f),px,py,green.withAlpha(0),px+24,py+24,true));
+        g.setGradientFill(juce::ColourGradient(green.withAlpha(.4f*output+.12f),px,py,green.withAlpha(0.0f),px+24,py+24,true));
         g.fillEllipse(px-24,py-24,48,48);
         g.setColour(green);g.fillEllipse(px-3,py-3,6,6);
     }
