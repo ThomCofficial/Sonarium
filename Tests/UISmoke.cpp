@@ -39,7 +39,7 @@ int main(){
             verify(drive!=nullptr,"drive knob absent");
             auto paintKnob=[drive](){
                 juce::Image image(juce::Image::ARGB,drive->getWidth(),drive->getHeight(),true);
-                juce::Graphics graphics(image);drive->paint(graphics);
+                {juce::Graphics graphics(image);drive->paint(graphics);}
                 return signature(image);
             };
             drive->setValue(.04,juce::sendNotificationSync);
@@ -52,7 +52,7 @@ int main(){
             radar.setSize(410,410);
             auto paintRadar=[&radar](){
                 juce::Image image(juce::Image::ARGB,410,410,true);
-                juce::Graphics graphics(image);radar.paint(graphics);return signature(image);
+                {juce::Graphics graphics(image);radar.paint(graphics);}return signature(image);
             };
             const auto radarBefore=paintRadar();
             for(int i=0;i<15;i++)radar.advanceFrame();
@@ -61,7 +61,7 @@ int main(){
             reel.setSize(118,86);
             auto paintReel=[&reel](){
                 juce::Image image(juce::Image::ARGB,118,86,true);
-                juce::Graphics graphics(image);reel.paint(graphics);return signature(image);
+                {juce::Graphics graphics(image);reel.paint(graphics);}return signature(image);
             };
             const auto reelBefore=paintReel();
             for(int i=0;i<12;i++)reel.advanceFrame();
