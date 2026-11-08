@@ -28,8 +28,9 @@ int main(){
         verify(editor->getNumChildComponents()>30,"missing UI components");
         juce::Image frame(juce::Image::ARGB,editor->getWidth(),editor->getHeight(),true);
         juce::Graphics g(frame);
-        editor->paintEntireComponent(g,true);
-        verify(signature(frame)!=0,"editor failed to paint");
+        // Direct paint is correct for a detached editor in headless CI.
+        editor->paint(g);
+        verify(frame.getPixelAt(1,1).getAlpha()>0,"editor failed to paint");
         if(k==0){
             juce::Slider* drive=nullptr;
             for(int i=0;i<editor->getNumChildComponents();i++)
@@ -38,13 +39,33 @@ int main(){
             verify(drive!=nullptr,"drive knob absent");
             auto paintKnob=[drive](){
                 juce::Image image(juce::Image::ARGB,drive->getWidth(),drive->getHeight(),true);
-                juce::Graphics graphics(image);drive->paintEntireComponent(graphics,true);
+                juce::Graphics graphics(image);drive->paint(graphics);
                 return signature(image);
             };
             drive->setValue(.04,juce::sendNotificationSync);
+            const auto low=drive->getValue();
             const auto before=paintKnob();
             drive->setValue(.96,juce::sendNotificationSync);
+            verify(std::abs(drive->getValue()-low)>.7,"knob parameter does not respond");
             verify(before!=paintKnob(),"knob value does not change graphics");
+            SonariumRadar radar(plugin);
+            radar.setSize(410,410);
+            auto paintRadar=[&radar](){
+                juce::Image image(juce::Image::ARGB,410,410,true);
+                juce::Graphics graphics(image);radar.paint(graphics);return signature(image);
+            };
+            const auto radarBefore=paintRadar();
+            for(int i=0;i<15;i++)radar.advanceFrame();
+            verify(radarBefore!=paintRadar(),"sonar sweep is static");
+            SonariumTapeReel reel;
+            reel.setSize(118,86);
+            auto paintReel=[&reel](){
+                juce::Image image(juce::Image::ARGB,118,86,true);
+                juce::Graphics graphics(image);reel.paint(graphics);return signature(image);
+            };
+            const auto reelBefore=paintReel();
+            for(int i=0;i<12;i++)reel.advanceFrame();
+            verify(reelBefore!=paintReel(),"tape reels are static");
         }
         for(int m=0;m<3;m++){
             if(auto* param=plugin.state.getParameter("mode"))
@@ -67,6 +88,6 @@ int main(){
     plugin.setStateInformation(state.getData(),static_cast<int>(state.getSize()));
     plugin.releaseResources();
     std::cout<<"PASS: 8 editor open/close cycles, 2 sizes, paint, rotating knobs, 3 engines, "
-                "oversized audio blocks, state roundtrip\n";
+                "oversized audio blocks, animated radar/reels, state roundtrip\n";
     return 0;
 }

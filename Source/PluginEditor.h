@@ -14,8 +14,10 @@ class SonariumRadar final : public juce::Component,private juce::Timer {
 public:
     explicit SonariumRadar(SonariumAudioProcessor&);
     void paint(juce::Graphics&) override;
+    // Deterministic frame stepping also allows headless image regression tests.
+    void advanceFrame() noexcept {angle=std::fmod(angle+.041f,sonarium::tau); repaint();}
 private:
-    void timerCallback() override {angle+=.021f;repaint();}
+    void timerCallback() override {if(isShowing())advanceFrame();}
     SonariumAudioProcessor& processor;
     float angle=0.0f;
 };
@@ -24,8 +26,9 @@ class SonariumTapeReel final : public juce::Component,private juce::Timer {
 public:
     SonariumTapeReel();
     void paint(juce::Graphics&) override;
+    void advanceFrame() noexcept {rotation=std::fmod(rotation+.113f,sonarium::tau); repaint();}
 private:
-    void timerCallback() override {rotation+=.072f;repaint();}
+    void timerCallback() override {if(isShowing())advanceFrame();}
     float rotation=0.0f;
 };
 
@@ -34,7 +37,7 @@ public:
     explicit SonariumMeter(SonariumAudioProcessor&);
     void paint(juce::Graphics&) override;
 private:
-    void timerCallback() override {repaint();}
+    void timerCallback() override {if(isShowing())repaint();}
     SonariumAudioProcessor& processor;
 };
 
