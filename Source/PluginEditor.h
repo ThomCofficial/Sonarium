@@ -16,6 +16,7 @@ public:
     void paint(juce::Graphics&) override;
     // Deterministic frame stepping also allows headless image regression tests.
     void advanceFrame() noexcept {angle=std::fmod(angle+.041f,sonarium::tau); repaint();}
+    float getSweepAngle() const noexcept {return angle;}
 private:
     void timerCallback() override {if(isShowing())advanceFrame();}
     SonariumAudioProcessor& processor;
@@ -27,6 +28,7 @@ public:
     SonariumTapeReel();
     void paint(juce::Graphics&) override;
     void advanceFrame() noexcept {rotation=std::fmod(rotation+.113f,sonarium::tau); repaint();}
+    float getReelAngle() const noexcept {return rotation;}
 private:
     void timerCallback() override {if(isShowing())advanceFrame();}
     float rotation=0.0f;
