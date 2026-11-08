@@ -9,10 +9,10 @@ struct ParamDef {const char* id; const char* name;float value;};
 constexpr ParamDef controls[]={
  {"sub","Sub",.65f},{"drive","Drive",.25f},{"mute","Mute",.45f},{"electric","Electric",.28f},{"tone","Tone",.55f},
  {"static","Static",.35f},{"drift","Drift",.40f},{"dust","Dust",.30f},{"padbloom","Pad Bloom",.58f},{"texture","Texture",.45f},
- {"ping","Ping",.60f},{"depth","Depth",.45f},{"echo","Echo",.40f},{"pluck","Pluck",.65f},{"sea","Sea",.48f},{"signal","Signal",.60f},
- {"tapetime","Tape Time",.40f},{"tapefb","Tape Feedback",.35f},{"tapemix","Tape Mix",.25f},
- {"room","Room Reverb",.12f},{"bloom","Bloom Reverb",.17f},{"plate","Plate Reverb",.12f},
- {"glide","Glide",.0f},{"master","Master",.75f}};
+ {"ping","Ping",.83f},{"depth","Depth",.70f},{"echo","Echo",.65f},{"pluck","Pluck",.75f},{"sea","Sea",.72f},{"signal","Signal",.60f},
+ {"tapetime","Tape Time",.53f},{"tapefb","Tape Feedback",.50f},{"tapemix","Tape Mix",.40f},
+ {"room","Room Reverb",.10f},{"bloom","Bloom Reverb",.52f},{"plate","Plate Reverb",.24f},
+ {"glide","Glide",.0f},{"master","Master",.77f}};
 struct Preset {
     const char* name;int mode,tape;std::array<float,24> controls;
 };
@@ -44,7 +44,7 @@ SonariumAudioProcessor::APVTS::ParameterLayout SonariumAudioProcessor::createLay
 
 SonariumAudioProcessor::SonariumAudioProcessor():
     juce::AudioProcessor(BusesProperties().withOutput("Output",juce::AudioChannelSet::stereo(),true)),
-    state(*this,nullptr,"SONARIUM",createLayout()) { loadPreset(0); }
+    state(*this,nullptr,"SONARIUM",createLayout()) {}
 
 bool SonariumAudioProcessor::isBusesLayoutSupported(const BusesLayout& layout) const {
     return layout.getMainOutputChannelSet()==juce::AudioChannelSet::stereo()
@@ -58,7 +58,10 @@ void SonariumAudioProcessor::prepareToPlay(double sr,int block) {
     for(auto& v:voices)v.active=false;
     tape.prepare(sr);
     for(auto& reverb:reverbs) reverb.setSampleRate(sr);
-    for(auto& b:reverbBuffers)b.setSize(2,std::max(32,block),false,true,true);
+    reverbScratchSize=juce::jlimit(64,8192,std::max(64,block));
+    for(auto& b:reverbBuffers)b.setSize(2,reverbScratchSize,false,true,true);
+    parameterSmoothing=1.0f-std::exp(-1.0f/(static_cast<float>(sr)*.018f));
+    interpolatedParams=snapshot();
     masterSmooth=state.getRawParameterValue("master")->load();
     lLevel=rLevel=0;meterL.store(0);meterR.store(0);
 }
@@ -103,7 +106,9 @@ void SonariumAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,juce:
     buffer.clear();
     const int n=buffer.getNumSamples();
     if(n<=0)return;
-    auto p=snapshot();
+    const auto target=snapshot();
+    auto p=interpolatedParams;
+    p.mode=target.mode;p.poly=target.poly;p.tapeType=target.tapeType;
     p.pitch=pitchBend;p.mod=modWheel;
     keyboard.processNextMidiBuffer(midi,0,n,true);
     juce::MidiBuffer::Iterator iterator(midi);
@@ -112,6 +117,14 @@ void SonariumAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,juce:
     float* l=buffer.getWritePointer(0);
     float* r=buffer.getWritePointer(1);
     for(int i=0;i<n;i++) {
+        // 18 ms smoothing for host-driven parameter steps; no allocation or locks.
+        #define RAMP(x) p.x += (target.x-p.x)*parameterSmoothing
+        RAMP(sub);RAMP(drive);RAMP(mute);RAMP(electric);RAMP(tone);
+        RAMP(stat);RAMP(drift);RAMP(dust);RAMP(padBloom);RAMP(texture);
+        RAMP(ping);RAMP(depth);RAMP(echo);RAMP(pluck);RAMP(sea);RAMP(signal);
+        RAMP(tapeTime);RAMP(tapeFeedback);RAMP(tapeMix);
+        RAMP(room);RAMP(bloom);RAMP(plate);RAMP(glide);RAMP(master);
+        #undef RAMP
         while(more&&eventSample<=i) {
             if(message.isNoteOn()) noteOn(message.getNoteNumber(),message.getFloatVelocity(),p.mode,p.poly);
             else if(message.isNoteOff()) noteOff(message.getNoteNumber());
@@ -138,13 +151,11 @@ void SonariumAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,juce:
         l[i]=echo.l*masterSmooth;
         r[i]=echo.r*masterSmooth;
     }
-    // Three independently modelled acoustic spaces, blended in parallel.
+    // Bounded reverb scratch. Cubase may send blocks larger than requested.
+    // Never resize/allocate from processBlock().
     const std::array<float,3> amounts{p.room,p.bloom,p.plate};
     for(int k=0;k<3;k++) {
         auto& rb=reverbBuffers[static_cast<size_t>(k)];
-        if(rb.getNumSamples()<n)rb.setSize(2,n,false,true,true);
-        rb.copyFrom(0,0,buffer,0,0,n);
-        rb.copyFrom(1,0,buffer,1,0,n);
         juce::Reverb::Parameters rp;
         rp.roomSize=k==0?.25f:k==1?.97f:.64f;
         rp.damping=k==0?.60f:k==1?.15f:.30f;
@@ -152,13 +163,18 @@ void SonariumAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,juce:
         rp.width=k==0?.65f:1.0f;
         rp.freezeMode=0.0f;
         reverbs[static_cast<size_t>(k)].setParameters(rp);
-        reverbs[static_cast<size_t>(k)].processStereo(rb.getWritePointer(0),rb.getWritePointer(1),n);
-        float targetAmount=amounts[static_cast<size_t>(k)]*(k==1?.40f:.28f);
+        const float targetAmount=amounts[static_cast<size_t>(k)]*(k==1?.40f:.28f);
         auto& amount=wetSmoothed[static_cast<size_t>(k)];
-        for(int i=0;i<n;i++) {
-            amount+=(targetAmount-amount)*.00075f;
-            l[i]+=rb.getSample(0,i)*amount;
-            r[i]+=rb.getSample(1,i)*amount;
+        for(int offset=0;offset<n;offset+=reverbScratchSize){
+            const int chunk=std::min(n-offset,reverbScratchSize);
+            rb.copyFrom(0,0,buffer,0,offset,chunk);
+            rb.copyFrom(1,0,buffer,1,offset,chunk);
+            reverbs[static_cast<size_t>(k)].processStereo(rb.getWritePointer(0),rb.getWritePointer(1),chunk);
+            for(int j=0;j<chunk;j++){
+                amount+=(targetAmount-amount)*.00075f;
+                l[offset+j]+=rb.getSample(0,j)*amount;
+                r[offset+j]+=rb.getSample(1,j)*amount;
+            }
         }
     }
     for(int i=0;i<n;i++){
@@ -166,6 +182,7 @@ void SonariumAudioProcessor::processBlock(juce::AudioBuffer<float>& buffer,juce:
         lLevel=std::max(std::abs(l[i]),lLevel*.9998f);
         rLevel=std::max(std::abs(r[i]),rLevel*.9998f);
     }
+    interpolatedParams=p;
     meterL.store(sonarium::clamp(lLevel,0,1),std::memory_order_relaxed);
     meterR.store(sonarium::clamp(rLevel,0,1),std::memory_order_relaxed);
 }

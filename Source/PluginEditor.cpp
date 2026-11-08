@@ -239,9 +239,7 @@ SonariumAudioProcessorEditor::SonariumAudioProcessorEditor(SonariumAudioProcesso
     keyboardView(p.keyboard,juce::MidiKeyboardComponent::horizontalKeyboard) {
     setLookAndFeel(&look);
     setOpaque(true);
-    setSize(1600,900);
-    setResizable(true,true);
-    setResizeLimits(1100,620,2400,1350);
+    // Construct every child before setting size: setSize synchronously calls resized().
     addAndMakeVisible(radar);
     addAndMakeVisible(meter);
     for(auto& reel:reels)addAndMakeVisible(reel);
@@ -323,8 +321,10 @@ SonariumAudioProcessorEditor::SonariumAudioProcessorEditor(SonariumAudioProcesso
     keyboardView.setColour(juce::MidiKeyboardComponent::mouseOverKeyOverlayColourId,brass.withAlpha(.4f));
     keyboardView.setColour(juce::MidiKeyboardComponent::keyDownOverlayColourId,juce::Colours::orange.withAlpha(.5f));
     addAndMakeVisible(keyboardView);
+    setResizable(true,true);
+    setResizeLimits(1100,620,2400,1350);
+    setSize(1600,900);
     startTimerHz(12);
-    resized();
 }
 
 SonariumAudioProcessorEditor::~SonariumAudioProcessorEditor(){
@@ -352,6 +352,7 @@ void SonariumAudioProcessorEditor::addDial(const char* id,const char* title,floa
     dials.push_back(std::move(dial));
 }
 void SonariumAudioProcessorEditor::timerCallback(){
+    if (!isShowing()) return;
     presetLabel.setText(processor.getPresetName(),juce::dontSendNotification);
     int mode=static_cast<int>(processor.state.getRawParameterValue("mode")->load());
     int tape=static_cast<int>(processor.state.getRawParameterValue("tape")->load());
@@ -361,6 +362,7 @@ void SonariumAudioProcessorEditor::timerCallback(){
     }
 }
 void SonariumAudioProcessorEditor::resized(){
+    if (!polySlider || dials.size()!=24) return; // safe during host resize or partial construction
     float sx=getWidth()/W,sy=getHeight()/H;
     auto put=[this,sx,sy](juce::Component& c,float x,float y,float w,float h){
         c.setBounds(juce::roundToInt(x*sx),juce::roundToInt(y*sy),juce::roundToInt(w*sx),juce::roundToInt(h*sy));

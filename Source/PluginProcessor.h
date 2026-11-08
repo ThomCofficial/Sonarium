@@ -41,6 +41,9 @@ private:
     sonarium::TapeEcho tape;
     std::array<juce::Reverb,3> reverbs;
     std::array<juce::AudioBuffer<float>,3> reverbBuffers;
+    int reverbScratchSize=256;
+    float parameterSmoothing=0.001f;
+    sonarium::Params interpolatedParams{};
     uint32_t randomState=0x37aacc11u;
     uint64_t voiceClock=0;
     std::atomic<int> presetIndex{0};

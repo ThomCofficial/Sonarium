@@ -136,6 +136,7 @@ public:
         for(auto& line:lines) {std::fill(line.l.begin(),line.l.end(),0.0f);std::fill(line.r.begin(),line.r.end(),0.0f);line.pos=0;line.filterL=line.filterR=0;}
     }
     Stereo process(Stereo in,const Params& p) noexcept {
+        if (lines[0].l.size()<4) return in;
         smoothSamples+=(sr*(.07f+1.05f*p.tapeTime)-smoothSamples)*.00013f;
         smoothMix+=(p.tapeMix-smoothMix)*.0009f;
         int idx=std::max(0,std::min(2,p.tapeType));

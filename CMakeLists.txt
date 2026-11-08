@@ -44,3 +44,15 @@ else()
     target_compile_options(sonarium_dsp_stress PRIVATE -Wall -Wextra -Wpedantic)
 endif()
 add_test(NAME SonariumDSPStress COMMAND sonarium_dsp_stress)
+
+# Smoke test instantiates the actual plugin editor and catches constructor
+# and close-window crashes that DSP-only tests cannot.
+juce_add_console_app(Sonarium_UIStress PRODUCT_NAME "Sonarium UI Stress")
+target_sources(Sonarium_UIStress PRIVATE Tests/UISmoke.cpp)
+target_include_directories(Sonarium_UIStress PRIVATE Source)
+target_link_libraries(Sonarium_UIStress PRIVATE Sonarium
+    juce::juce_audio_utils juce::juce_gui_extra juce::juce_dsp)
+target_compile_definitions(Sonarium_UIStress PRIVATE
+    JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0)
+add_test(NAME SonariumUIStress COMMAND Sonarium_UIStress)
+set_tests_properties(SonariumUIStress PROPERTIES TIMEOUT 90)
