@@ -561,6 +561,3 @@ void SonariumAudioProcessorEditor::paint(juce::Graphics& g){
     label(g,"VOICES",31,810,118,28,20,true,ink);
     label(g,"MIDI POLYPHONY",37,861,126,20,12,false,ink);
 }
-
-
-}
